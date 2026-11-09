@@ -1,0 +1,61 @@
+---
+date: 2026-11-09
+title: Set the model for each prompt
+description: Register the models your project uses, attach one to each prompt version, and carry it into the playground, experiments, and API.
+author: shashj
+---
+
+import { ChangelogHeader } from "@/components/changelog/ChangelogHeader";
+import { Book } from "lucide-react";
+
+<ChangelogHeader />
+
+You can now set the model a prompt version runs on. Register your models once on the new **Models** page, then pick one when you create a prompt version, with optional overrides for temperature, top P, and max tokens. The model travels with the prompt:
+
+- Open a prompt in the playground and start on its model and parameters instead of choosing them again.
+- Run an experiment with the prompt's model already selected.
+- Read the model from the API in your application instead of hardcoding it next to the prompt name.
+
+<Frame>
+  ![The Models page listing registered models with their provider, model ID, status, context window, capabilities, pricing link, and whether an LLM connection can run them.](/images/changelog/2026-11-09-model-registry/models-page.png)
+</Frame>
+
+## Register your models
+
+Open **Models** under **Context management**. For each model, record the provider, which is the name of an LLM connection, and the model ID. You can also add a status of active or deprecated, the context window, capabilities (tool calling, vision, JSON mode, reasoning), default parameters, and the model definition that prices it. Deprecated models stay in the registry but no longer appear when you pick a model for a prompt.
+
+**Import from connections** registers every model your LLM connections offer in one step and leaves existing entries as they are. Project owners and admins manage the registry, and everyone who can read prompts can choose from it.
+
+## Choose a model per prompt version
+
+Pick a model in the prompt editor and override its parameters if you need to. The fields show the model's defaults as placeholders, a new version starts from the version you build on, and the prompt's **Config** tab shows the result.
+
+<Frame>
+  ![The new prompt version form with a Model selector and Temperature, Top P, and Max tokens fields showing the model's defaults as placeholders.](/images/changelog/2026-11-09-model-registry/prompt-model.png)
+</Frame>
+
+You can't delete a model while prompt versions still use it, and Langfuse tells you how many do.
+
+## Use it in the playground, experiments, and API
+
+- **Test in LLM playground** opens with the prompt's model and parameters set, as long as one of your LLM connections can run the model.
+- **Save as prompt** in the playground starts the new prompt with the playground's model and the parameters you switched on.
+- **Run experiment** preselects the prompt's model and parameters.
+- A prompt fetched through the API includes `registryModelId`, `modelParams`, and a resolved `model` with its effective parameters. `POST /api/public/v2/prompts` accepts `registryModelId` and `modelParams`, `GET /api/public/v2/prompts` returns `lastModel`, and the new `/api/public/registry-models` endpoints manage the registry. The MCP prompt tools accept and return the model too.
+
+The new API fields are additive, so existing integrations keep working. Self-hosted deployments get a database migration that runs on startup unless `LANGFUSE_AUTO_POSTGRES_MIGRATION_DISABLED=true`.
+
+<Cards num={2}>
+  <Card
+    title="Model registry"
+    href="/docs/prompt-management/features/model-registry"
+    icon={<Book />}
+    arrow
+  />
+  <Card
+    title="Public API"
+    href="/docs/api-and-data-platform/features/public-api"
+    icon={<Book />}
+    arrow
+  />
+</Cards>
