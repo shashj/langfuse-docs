@@ -9,6 +9,7 @@
     "variables",
     "composability",
     "message-placeholders",
+    "model-registry",
     "config",
     "[Prompt Experiments ↗](/docs/evaluation/dataset-runs/run-via-ui)",
     "caching",

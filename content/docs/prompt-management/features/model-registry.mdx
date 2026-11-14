@@ -1,0 +1,111 @@
+---
+title: Model registry
+sidebarTitle: Model registry
+description: Keep a catalogue of the models your project uses and attach one to each prompt version, so the model and its parameters follow the prompt into the playground, experiments, and the API.
+---
+
+# Model registry
+
+The model registry is a catalogue of the models your project uses. Register a model once, with its capabilities and default parameters, then choose it for a prompt version. The model and any parameter overrides are versioned with the prompt and carry into the [playground](/docs/prompt-management/features/playground), [experiments](/docs/evaluation/experiments/experiments-via-ui), and the API.
+
+Typical uses:
+
+- Pin a prompt to the model it was written for, so everyone who opens it in the playground starts on that model.
+- Record which models support tool calling or vision, and mark older models as deprecated so nobody picks them for new prompts.
+- Read a prompt's model and default parameters in your application instead of hardcoding them.
+
+<Frame fullWidth>
+  ![The Models page listing registered models with their provider, model ID, status, context window, capabilities, pricing link, and whether an LLM connection can run them](/images/docs/model-registry-models-page.png)
+</Frame>
+
+<Callout type="info">
+The registry says **which models you use**. [Model definitions](/docs/observability/features/token-and-cost-tracking) hold the prices Langfuse uses to calculate cost, and the prompt [`config`](/docs/prompt-management/features/config) holds anything else you want to attach to a prompt, such as tool definitions or a response schema. They work side by side and none replaces another.
+</Callout>
+
+## Register models [#register-models]
+
+Open [Models](https://cloud.langfuse.com/project/~/models) in the sidebar, under **Context management**, and click **Add model**.
+
+| Field                                | What it holds                                                                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provider                             | The name of the [LLM connection](/docs/administration/llm-connection) that runs the model. Together with the model ID it must be unique in the project. |
+| Model ID                             | The model name as your provider expects it.                                                                                                             |
+| Display name and description         | How the model appears in Langfuse.                                                                                                                      |
+| Status                               | `active` or `deprecated`. Deprecated models stay in the registry but are hidden when you choose a model for a prompt.                                   |
+| Context window and max output tokens | The model's limits, in tokens.                                                                                                                          |
+| Capabilities                         | Whether the model supports tool calling, vision, JSON mode, and reasoning.                                                                              |
+| Default parameters                   | The temperature, top P, and max tokens that prompts start from.                                                                                         |
+| Pricing                              | The model definition that prices this model. See [token and cost tracking](/docs/observability/features/token-and-cost-tracking).                       |
+
+Only the provider, model ID, and display name are required.
+
+<Frame>
+  ![The Edit model dialog showing display name, provider, model ID, status, context window, output limit, and capability switches](/images/docs/model-registry-edit-dialog.png)
+</Frame>
+
+The **Connection** column shows whether an LLM connection with the provider's name can run the model.
+
+### Import from connections [#import-from-connections]
+
+Click **Import from connections** to register every model your LLM connections offer. Models that are already in the registry are left as they are, so you can run it again after you add a connection.
+
+<Callout type="info">
+Project owners and admins can add, edit, and delete models. Everyone who can read prompts can choose from the registry. You can't delete a model while prompt versions still use it. Langfuse shows how many do.
+</Callout>
+
+## Choose a model for a prompt [#choose-a-model]
+
+When you create a prompt version, pick a model in the **Model** field above the config. You can override the temperature, top P, and max tokens for this version. A field you leave empty uses the model's default, which the field shows as a placeholder.
+
+A new version starts from the model and overrides of the version you build on. The prompt's **Config** tab shows the model and any overrides.
+
+<Frame fullWidth>
+  ![The new prompt version form with a Model selector and Temperature, Top P, and Max tokens fields that show the model's defaults as placeholders](/images/docs/model-registry-prompt-model.png)
+</Frame>
+
+To set it from the API, pass `registryModelId` and `modelParams` when you create the prompt. The ID comes from `GET /api/public/registry-models`.
+
+```bash
+curl -X POST "https://cloud.langfuse.com/api/public/v2/prompts" \
+  -u "$LANGFUSE_PUBLIC_KEY:$LANGFUSE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "support-assistant",
+    "type": "text",
+    "prompt": "You are a helpful support assistant for {{product}}.",
+    "registryModelId": "<registry-model-id>",
+    "modelParams": { "temperature": 0.3 }
+  }'
+```
+
+## Use the model in the playground and experiments [#playground-and-experiments]
+
+- **Test in LLM playground** on a prompt opens the [playground](/docs/prompt-management/features/playground) with the prompt's model and parameters set, as long as one of your LLM connections can run the model.
+- **Save as prompt** in the playground starts the new prompt with the playground's model and the parameters you switched on, if that model is in your registry.
+- **Run experiment** on a prompt selects its model and parameters in the [experiment](/docs/evaluation/experiments/experiments-via-ui) setup.
+
+## Read the model in your application [#read-the-model]
+
+A prompt that you fetch through the API includes its model:
+
+```json
+{
+  "name": "support-assistant",
+  "registryModelId": "<registry-model-id>",
+  "modelParams": { "temperature": 0.3 },
+  "model": {
+    "provider": "my-connection",
+    "modelId": "my-model-id",
+    "params": { "temperature": 0.3, "max_tokens": 1024 }
+  }
+}
+```
+
+- `model` is resolved from the registry. Its `params` are the model's default parameters with the prompt's `modelParams` applied on top. It is `null` for a prompt without a model.
+- `GET /api/public/v2/prompts` returns `lastModel` for each prompt, in the same shape.
+- The MCP prompt tools accept and return the model. See the [MCP server](/docs/api-and-data-platform/features/mcp-server) docs.
+- The `/api/public/registry-models` endpoints let you list, create, get, replace, and delete models. See the [API reference](https://api.reference.langfuse.com/#tag/registrymodels).
+
+<Callout type="warning">
+SDKs cache prompts client-side, so a change to a registry model can take up to the cache TTL to reach your application. See [caching](/docs/prompt-management/features/caching).
+</Callout>

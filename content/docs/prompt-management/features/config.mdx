@@ -18,6 +18,10 @@ Because the config is **versioned together with the prompt**, you can manage all
   ![Prompt config](/images/docs/prompt-management-config.png)
 </Frame>
 
+<Callout type="info">
+To set which model a prompt version runs on, use the [model registry](/docs/prompt-management/features/model-registry). It keeps the model and its default parameters in one place and carries them into the playground, experiments, and the API. The config stays the place for everything else, such as tool definitions and response schemas.
+</Callout>
+
 ## Setting the config
 
 Setting the config can be done both via the Langfuse prompt UI and via the SDKs.
