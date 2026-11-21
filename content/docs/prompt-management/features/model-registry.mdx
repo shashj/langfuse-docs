@@ -26,16 +26,16 @@ The registry says **which models you use**. [Model definitions](/docs/observabil
 
 Open [Models](https://cloud.langfuse.com/project/~/models) in the sidebar, under **Context management**, and click **Add model**.
 
-| Field                                | What it holds                                                                                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Provider                             | The name of the [LLM connection](/docs/administration/llm-connection) that runs the model. Together with the model ID it must be unique in the project. |
-| Model ID                             | The model name as your provider expects it.                                                                                                             |
-| Display name and description         | How the model appears in Langfuse.                                                                                                                      |
-| Status                               | `active` or `deprecated`. Deprecated models stay in the registry but are hidden when you choose a model for a prompt.                                   |
-| Context window and max output tokens | The model's limits, in tokens.                                                                                                                          |
-| Capabilities                         | Whether the model supports tool calling, vision, JSON mode, and reasoning.                                                                              |
-| Default parameters                   | The temperature, top P, and max tokens that prompts start from.                                                                                         |
-| Pricing                              | The model definition that prices this model. See [token and cost tracking](/docs/observability/features/token-and-cost-tracking).                       |
+| Field                                | What it holds                                                                                                                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provider                             | The name of the [LLM connection](/docs/administration/llm-connection) that runs the model. Together with the model ID it must be unique in the project.                    |
+| Model ID                             | The model name as your provider expects it.                                                                                                                                |
+| Display name and description         | How the model appears in Langfuse.                                                                                                                                         |
+| Status                               | `active` or `deprecated`. Deprecated models stay in the registry but are hidden when you choose a model for a prompt.                                                      |
+| Context window and max output tokens | The model's limits, in tokens.                                                                                                                                             |
+| Capabilities                         | Whether the model supports tool calling, vision, JSON mode, and reasoning.                                                                                                 |
+| Default parameters                   | The temperature, top P, max tokens, reasoning budget, and provider options that prompts start from. See [reasoning and provider options](#reasoning-and-provider-options). |
+| Pricing                              | The model definition that prices this model. See [token and cost tracking](/docs/observability/features/token-and-cost-tracking).                                          |
 
 Only the provider, model ID, and display name are required.
 
@@ -52,6 +52,24 @@ Click **Import from connections** to register every model your LLM connections o
 <Callout type="info">
 Project owners and admins can add, edit, and delete models. Everyone who can read prompts can choose from the registry. You can't delete a model while prompt versions still use it. Langfuse shows how many do.
 </Callout>
+
+## Reasoning and provider options [#reasoning-and-provider-options]
+
+Some models take settings beyond temperature, top P, and max tokens, such as how much a reasoning model thinks. A registry model can hold two of them as defaults:
+
+- **Default max reasoning tokens** is the token budget for model thinking. Use `-1` to let the provider decide and `0` to turn it off. Langfuse applies it to Gemini models on Vertex AI, where it takes precedence over `thinkingBudget`. For other providers, set the budget through provider options.
+- **Provider options** is a JSON object of extra options that Langfuse sends to the provider. Langfuse translates them for the provider that runs the model.
+
+| Provider                                | Option                                                                          | Example                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| OpenAI and Azure OpenAI                 | `reasoning_effort`                                                              | `{"reasoning_effort": "high"}`                               |
+| Anthropic                               | `thinking`                                                                      | `{"thinking": {"type": "enabled", "budget_tokens": 2048}}`   |
+| Google AI Studio and Vertex AI (Gemini) | `thinkingBudget` for Gemini 2.5 models, `thinkingLevel` for other Gemini models | `{"thinkingBudget": 1024}`                                   |
+| Amazon Bedrock                          | Options in the AI SDK shape, such as `reasoningConfig`                          | See the Amazon Bedrock documentation for the supported shape |
+
+Check your provider's API reference for the values it supports. An option that Langfuse does not recognise for the provider is rejected with an error when the model runs. The exception is a custom OpenAI-compatible endpoint, which receives unknown options as written.
+
+These settings are part of the model's parameters. A prompt that uses the model gets them in its [effective `model.params`](#read-the-model), and the [playground](/docs/prompt-management/features/playground) starts with them switched on when you open the prompt. A prompt version can still override them in `modelParams` through the API, and its values win over the registry's for the keys it sets.
 
 ## Choose a model for a prompt [#choose-a-model]
 
