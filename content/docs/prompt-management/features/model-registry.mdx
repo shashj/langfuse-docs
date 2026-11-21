@@ -84,6 +84,19 @@ curl -X POST "https://cloud.langfuse.com/api/public/v2/prompts" \
 - **Save as prompt** in the playground starts the new prompt with the playground's model and the parameters you switched on, if that model is in your registry.
 - **Run experiment** on a prompt selects its model and parameters in the [experiment](/docs/evaluation/experiments/experiments-via-ui) setup.
 
+## See how a model is used in traces [#model-in-traces]
+
+Langfuse matches the model name on each generation to a [model definition](/docs/observability/features/token-and-cost-tracking) to calculate its cost. A registry model that is linked to a model definition through its **Pricing** field is connected to every generation that matched that definition.
+
+- **Usage on the Models page.** The **Last used** column shows when a generation last used the model. **Generations, 30d** counts the generations from the last 30 days. A model without a pricing link shows **Link pricing** instead, because Langfuse has no way to tell which generations used it.
+- **View generations.** Open the row menu of a model and click **View generations** to open the generations table filtered to that model, for the last 30 days. The action is disabled until the model has a pricing link.
+- **The model on a generation.** In a trace, the model name in the header of a generation links to the matching registry model on the Models page.
+- **Prompt model mismatch.** When a generation uses a prompt version that has a model, and the generation ran on a different model, the header shows a **prompt expects** link to the model the prompt names. Langfuse compares the linked model definitions, not the names, so a dated model name such as `gpt-4o-2024-08-06` is not flagged when it matches the same definition as the prompt's model. Nothing is flagged if either model has no pricing link.
+
+<Callout type="info">
+Two registry models that link to the same model definition share the same usage numbers.
+</Callout>
+
 ## Read the model in your application [#read-the-model]
 
 A prompt that you fetch through the API includes its model:
