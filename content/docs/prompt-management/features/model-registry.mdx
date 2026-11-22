@@ -1,18 +1,20 @@
 ---
 title: Model registry
 sidebarTitle: Model registry
-description: Keep a catalogue of the models your project uses and attach one to each prompt version, so the model and its parameters follow the prompt into the playground, experiments, and the API.
+description: Keep a catalogue of the models your project uses and attach one to each prompt version, so the model and its parameters follow the prompt into the playground, experiments, evaluators, and the API.
 ---
 
 # Model registry
 
-The model registry is a catalogue of the models your project uses. Register a model once, with its capabilities and default parameters, then choose it for a prompt version. The model and any parameter overrides are versioned with the prompt and carry into the [playground](/docs/prompt-management/features/playground), [experiments](/docs/evaluation/experiments/experiments-via-ui), and the API.
+The model registry is a catalogue of the models your project uses. Register a model once, with its capabilities and default parameters, then choose it for a prompt version. The model and any parameter overrides are versioned with the prompt and carry into the [playground](/docs/prompt-management/features/playground), [experiments](/docs/evaluation/experiments/experiments-via-ui), and the API. You can also start an experiment or choose an evaluator's judge model straight from the registry.
 
 Typical uses:
 
 - Pin a prompt to the model it was written for, so everyone who opens it in the playground starts on that model.
 - Record which models support tool calling or vision, and mark older models as deprecated so nobody picks them for new prompts.
 - Read a prompt's model and default parameters in your application instead of hardcoding them.
+- Run an experiment on a registered model, see which experiments each model has run, and get a warning when a dataset doesn't fit the model.
+- Choose the judge model for [LLM-as-a-judge](/docs/evaluation/evaluation-methods/llm-as-a-judge) evaluators from the same list.
 
 <Frame fullWidth>
   ![The Models page listing registered models with their provider, model ID, status, context window, capabilities, pricing link, and whether an LLM connection can run them](/images/docs/model-registry-models-page.png)
@@ -100,13 +102,51 @@ curl -X POST "https://cloud.langfuse.com/api/public/v2/prompts" \
 
 - **Test in LLM playground** on a prompt opens the [playground](/docs/prompt-management/features/playground) with the prompt's model and parameters set, as long as one of your LLM connections can run the model.
 - **Save as prompt** in the playground starts the new prompt with the playground's model and the parameters you switched on, if that model is in your registry.
-- **Run experiment** on a prompt selects its model and parameters in the [experiment](/docs/evaluation/experiments/experiments-via-ui) setup.
+- **Run experiment** on a prompt selects its model and parameters in the [experiment](/docs/evaluation/experiments/experiments-via-ui) setup. See [run an experiment on a registry model](#run-experiments).
+
+## Run an experiment on a registry model [#run-experiments]
+
+In the [experiment](/docs/evaluation/experiments/experiments-via-ui) setup, the **Registry model** field above the provider and model fields lists the active models in your registry. Type to search it.
+
+- Choosing a model fills the provider, the model, and the model's default parameters. You can still change any of them.
+- A model whose provider has no matching [LLM connection](/docs/administration/llm-connection) is marked **no connection**. Add the connection before you run it.
+- If the prompt has a model, the field starts on it. Choose **Other model** to pick the provider and model yourself, as before. Editing the provider or model fields after you choose a registry model also switches the field back to **Other model**, because the run no longer uses that registry model.
+
+The run records which registry model it started from. The experiment's details panel shows the model's display name with its provider and model ID, and links to it on the Models page. Experiments that were started before this existed, or from **Other model**, still show the registry model when their provider and model match one in the registry.
+
+### Warnings before you run [#capability-warnings]
+
+Once you choose a dataset, the setup checks the registry model against the dataset and the prompt and shows a warning for each mismatch. It shows them again on the review step. A warning never stops you from running the experiment.
+
+| Warning        | When it appears                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vision         | Dataset items contain images or media, and the model is not marked as supporting vision.                                                                         |
+| Tool calling   | The prompt defines tools, and the model is not marked as supporting tool calling.                                                                                |
+| JSON mode      | Structured output is on, and the model is not marked as supporting JSON mode.                                                                                    |
+| Context window | The longest dataset item is longer than the model's context window. Langfuse estimates the length as one token per four characters, so the count is approximate. |
+
+<Callout type="info">
+Capabilities start switched off in the registry, so "not marked as supporting" can also mean nobody filled it in. Set a model's capabilities and context window in its [registry entry](#register-models). A model with no context window gets no length warning, and a model you pick with **Other model** gets no warnings, because Langfuse has no registered capabilities to check.
+</Callout>
+
+## Use a registry model for evaluators [#evaluators]
+
+The same **Registry model** field is on the forms where you choose the model that scores your data with [LLM-as-a-judge](/docs/evaluation/evaluation-methods/llm-as-a-judge):
+
+- the [project default model](/docs/evaluation/evaluation-methods/llm-as-a-judge#project-default-model), and
+- the custom model of an evaluator, which you see after you turn off **Use default evaluation model**.
+
+Choosing a model fills the provider, the model, and the model's default parameters, and you can still change them. The evaluator stores the provider, model, and parameters, not a link to the registry entry. When you open the form again, the field shows the registry model whose provider and model the fields hold, or **Other model** if there is none.
+
+Evaluators read structured output from the judge, so a model that is not marked as supporting JSON mode shows **not marked for JSON mode** in the list. Langfuse doesn't hide it, because the capability may simply be unset.
 
 ## See how a model is used in traces [#model-in-traces]
 
 Langfuse matches the model name on each generation to a [model definition](/docs/observability/features/token-and-cost-tracking) to calculate its cost. A registry model that is linked to a model definition through its **Pricing** field is connected to every generation that matched that definition.
 
 - **Usage on the Models page.** The **Last used** column shows when a generation last used the model. **Generations, 30d** counts the generations from the last 30 days. A model without a pricing link shows **Link pricing** instead, because Langfuse has no way to tell which generations used it.
+- **Experiments on the Models page.** **Experiments, 30d** counts the experiments from the last 30 days that ran on the model, and **Datasets, 30d** counts the datasets they ran on. An experiment counts for the registry model it started from, or, when it didn't start from one, for the provider and model it ran on. These columns need [Langfuse v4](/docs/v4), the same as the Experiments page. Without it they show a dash.
+- **View experiments.** Open the row menu of a model and click **View experiments** to open the Experiments page filtered to the runs on that model's provider and model.
 - **View generations.** Open the row menu of a model and click **View generations** to open the generations table filtered to that model, for the last 30 days. The action is disabled until the model has a pricing link.
 - **The model on a generation.** In a trace, the model name in the header of a generation links to the matching registry model on the Models page.
 - **Prompt model mismatch.** When a generation uses a prompt version that has a model, and the generation ran on a different model, the header shows a **prompt expects** link to the model the prompt names. Langfuse compares the linked model definitions, not the names, so a dated model name such as `gpt-4o-2024-08-06` is not flagged when it matches the same definition as the prompt's model. Nothing is flagged if either model has no pricing link.
