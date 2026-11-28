@@ -27,7 +27,7 @@ There are 3 different groups of APIs:
 This page covers concepts and workflows. For the complete request and response contract of every endpoint — parameters, schemas, and interactive examples — see the API reference:
 
 - API Reference: https://api.reference.langfuse.com
-- OpenAPI spec: https://cloud.langfuse.com/generated/api/openapi.yml (organization API: https://cloud.langfuse.com/generated/organizations-api/openapi.yml)
+- OpenAPI spec: https://cloud.langfuse.com/generated/api/openapi.yml (includes the [organization-scoped endpoints](/docs/administration/scim-and-org-api); the self-hosted [Instance Management API](/self-hosting/administration/instance-management-api) has its own spec: https://cloud.langfuse.com/generated/organizations-api/openapi.yml)
 - Self-hosted: every instance running Langfuse v4.36.0 or later serves its own spec at `/api/openapi.yaml` and an interactive reference at `/api/docs`
 
 ## Quickstart [#quickstart]
@@ -400,6 +400,7 @@ Each condition is `{"type", "column", "operator", "value"}` (plus `"key"` for me
 | `datetime`      | `>`, `<`, `>=`, `<=`                                                                                                          | `startTime`, `endTime`                                 |
 | `boolean`       | `=`, `<>`                                                                                                                     | `isRootObservation`                                    |
 | `stringObject`  | `=`, `contains`, `does not contain`, `starts with`, `ends with`, `is set`, `is not set`, with `key` naming the metadata field | `metadata`                                             |
+| `numberObject`  | `=`, `>`, `<`, `>=`, `<=`, with `key` naming the metadata field                                                               | `metadata`                                             |
 | `null`          | `is null`, `is not null`                                                                                                      | any nullable column                                    |
 
 <Callout type="info">
@@ -407,7 +408,7 @@ Each condition is `{"type", "column", "operator", "value"}` (plus `"key"` for me
 Each column accepts only the condition types and value formats below; anything else returns `400`.
 
 - `number` values must be JSON numbers: `"value": 0.5`, not `"value": "0.5"`.
-- `metadata` accepts only `stringObject`; `numberObject`, `booleanObject`, and `categoryOptions` are rejected. Values are compared as strings, so match numbers and booleans with `=` and a string value, e.g. `{"type":"stringObject","column":"metadata","key":"cached","operator":"=","value":"true"}`.
+- On the observations list endpoints (`GET /api/public/v2/observations` and `GET /api/public/observations`), `metadata` accepts `stringObject` and `numberObject`; `booleanObject` and `categoryOptions` are rejected. `numberObject` compares the value as a number, e.g. `{"type":"numberObject","column":"metadata","key":"retries","operator":">=","value":3}`; observations where the key is missing or its value is not a number do not match. Booleans are compared as strings, so match them with `stringObject`, `=` and a string value, e.g. `{"type":"stringObject","column":"metadata","key":"cached","operator":"=","value":"true"}`.
 - `input` and `output` accept only the `string` type (not `stringOptions` or `null`) and support `=` or `matches` (full-text search). Substring operators such as `contains`, `starts with`, and `ends with` work only when the same request also has an `=` or `matches` condition on `input` or `output`; on their own, they are rejected.
 
 </Callout>
