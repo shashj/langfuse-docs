@@ -4,6 +4,22 @@
 
 Repo for [langfuse.com](https://langfuse.com). Built with [Fumadocs](https://fumadocs.vercel.app/) and Next.js App Router.
 
+## 🍴 About this fork
+
+This is a fork of [langfuse/langfuse-docs](https://github.com/langfuse/langfuse-docs). It holds the documentation for [shashj/langfuse-models](https://github.com/shashj/langfuse-models), a fork of Langfuse that adds **models functionality**. Everything else is upstream documentation, and the fork is synced with upstream `main` periodically.
+
+**Why.** In Langfuse, models are second-class citizens. A model is a name on a generation and a pricing definition used to infer cost. This fork of Langfuse makes models first-class, and this fork of the docs describes how.
+
+**What the fork adds.**
+
+- **Model registry page.** [`content/docs/prompt-management/features/model-registry.mdx`](./content/docs/prompt-management/features/model-registry.mdx) covers the registry, models on prompts, usage per model, automatic pricing, and reading a prompt's model in your application.
+- **Changelog post.** [`content/changelog/2026-11-09-model-registry.mdx`](./content/changelog/2026-11-09-model-registry.mdx).
+- **Cross-references.** Registry models in experiments ([`experiments-via-ui.mdx`](./content/docs/evaluation/experiments/experiments-via-ui.mdx)) and in evaluators ([`llm-as-a-judge.mdx`](./content/docs/evaluation/evaluation-methods/llm-as-a-judge.mdx)), plus short mentions in the prompt management overview, playground and config pages.
+
+**To do.**
+
+- **Production monitoring of LLM applications.** Langfuse still does not have functions to monitor production effectively in one shot. Closing that gap is the next goal of the Langfuse fork, and its documentation will be added here when it exists.
+
 > ### 🧑‍💻 We're hiring
 >
 > Langfuse is growing fast (we doubled the team in the last 6 months) - since January 2026 we're part of ClickHouse, we're hiring engineers across Europe and in US-East time zones. Marketing and all other roles hire in Europe and all of the United States.
